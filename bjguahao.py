@@ -60,7 +60,6 @@ class Config(object):
                                     datefmt='%a, %d %b %Y %H:%M:%S')
 
                 self.mobile_no = data["username"]
-                self.password = data["password"]
                 self.date = data["date"]
                 self.hospital_id = data["hospitalId"]
                 self.department_id = data["departmentId"]
@@ -70,6 +69,7 @@ class Config(object):
                 self.medicare_card_id = data["medicareCardId"]
                 self.reimbursement_type = data["reimbursementType"]
                 self.doctorName = data["doctorName"]
+                self.doctorId = data["doctorId"]
                 self.children_name = data["childrenName"]
                 self.children_idno = data["childrenIdNo"]
                 self.cid_type = data["cidType"]
@@ -295,7 +295,7 @@ class Guahao(object):
                     logging.info("查询"+duty_date+"号源")
                     doctor = self.select_doctor_one_day(duty_date)
                     if doctor == 'NoDuty' or doctor == 'NotReady' :
-                        time.sleep(3)
+                        time.sleep(1)
                         continue
                     else:
                         return doctor
@@ -347,6 +347,11 @@ class Guahao(object):
         self.print_doctor()
         doctors = self.dutys
         if self.config.assign == 'true':
+            if self.config.doctorId:
+                for doctor in doctors:
+                    if doctor['doctorId'] == self.config.doctorId and (doctor['totalCount']%2!=0):
+                        logging.info("通过dockerId选中:" + self.get_doctor_name(doctor))
+                        return doctor
             for doctor_conf in self.config.doctorName:
                 for doctor in doctors:
                     if self.get_doctor_name(doctor) == doctor_conf and (doctor['totalCount']%2!=0):
@@ -355,6 +360,11 @@ class Guahao(object):
             return "NoDuty"
         # 按照配置优先级选择医生
         for doctor_conf in self.config.doctorName:
+            if self.config.doctorId:
+                for doctor in doctors:
+                    if doctor['doctorId'] == self.config.doctorId and (doctor['totalCount']%2!=0):
+                        logging.info("通过dockerId选中:" + self.get_doctor_name(doctor))
+                        return doctor
             for doctor in doctors:
                 if self.get_doctor_name(doctor) == doctor_conf and doctor['totalCount']%2!=0:
                     return doctor
@@ -611,7 +621,7 @@ class Guahao(object):
                 if self.start_time + datetime.timedelta(seconds=30) < datetime.datetime.now():
                     # 确认无号，终止程序
                     logging.info("没号了,亲~,休息一下继续刷")
-                    time.sleep(1)
+                    time.sleep(3)
                 else:
                     # 未到时间，强制重试
                     logging.debug("放号时间: " + self.start_time.strftime("%Y-%m-%d %H:%M"))
